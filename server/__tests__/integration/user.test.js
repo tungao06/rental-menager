@@ -7,11 +7,12 @@ const request = supertest(app);
 
 describe("User", () => {
   it("should be able to create user", async () => {
-    const response = await request.post("/users").send({
+    const response = await request.post("/signup").send({
       username: "userName",
       email: "useremail@email.com",
       password: "123123",
       phone: "0123456789",
+      roles: "user",
     });
 
     expect(response.status).toBe(200);
