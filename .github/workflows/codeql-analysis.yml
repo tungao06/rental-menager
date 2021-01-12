@@ -36,9 +36,8 @@ jobs:
       with:
         node-version: ${{ matrix.node_version }}
 
-    - name: server => npm install, build and test
+    - name: npm install, build and test
       run: |
-        cd server
         npm install
         npm run build --if-present
         npm test:
@@ -86,5 +85,3 @@ jobs:
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
-    - name: First interaction
-      uses: actions/first-interaction@v1.1.0
