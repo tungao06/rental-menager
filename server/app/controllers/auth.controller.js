@@ -120,7 +120,6 @@ exports.remove = (req, res) => {
       error.InternalServerError({ message: err }, res);
       return;
     }
-    console.log("data :>> ", data);
     if (data.n === 1) {
       TokenLog.deleteOne({ users: req.params._id }).exec((err, data) => {
         if (err) {
