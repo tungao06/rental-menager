@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
+const error = require("../controllers/error.controller");
 const db = require("../models");
 const User = db.user;
 const Role = db.role;
@@ -8,22 +9,51 @@ verifyToken = (req, res, next) => {
   let token = req.headers["x-access-token"];
 
   if (!token) {
-    return res.status(403).send({ message: "No token provided!" });
+    return error.Forbidden({ message: "No token provided!" }, res);
   }
 
   jwt.verify(token, config.secret, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized!" });
+      return error.Unauthorized({ message: "Unauthorized!" }, res);
     }
     req.userId = decoded.id;
     next();
   });
 };
 
+isMaster = (req, res, next) => {
+  User.findById(req.userId).exec((err, user) => {
+    if (err) {
+      error.InternalServerError({ message: err }, res);
+      return;
+    }
+    Role.find(
+      {
+        _id: { $in: user.roles },
+      },
+      (err, roles) => {
+        if (err) {
+          error.InternalServerError({ message: err }, res);
+          return;
+        }
+
+        for (let i = 0; i < roles.length; i++) {
+          if (roles[i].name === "master") {
+            next();
+            return;
+          }
+        }
+        error.Forbidden({ message: "Require Master Role!" }, res);
+        return;
+      }
+    );
+  });
+};
+
 isAdmin = (req, res, next) => {
   User.findById(req.userId).exec((err, user) => {
     if (err) {
-      res.status(500).send({ message: err });
+      error.InternalServerError({ message: err }, res);
       return;
     }
 
@@ -33,7 +63,7 @@ isAdmin = (req, res, next) => {
       },
       (err, roles) => {
         if (err) {
-          res.status(500).send({ message: err });
+          error.InternalServerError({ message: err }, res);
           return;
         }
 
@@ -44,17 +74,17 @@ isAdmin = (req, res, next) => {
           }
         }
 
-        res.status(403).send({ message: "Require Admin Role!" });
+        error.Forbidden({ message: "Require Admin Role!" }, res);
         return;
       }
     );
   });
 };
 
-isModerator = (req, res, next) => {
+isUser = (req, res, next) => {
   User.findById(req.userId).exec((err, user) => {
     if (err) {
-      res.status(500).send({ message: err });
+      error.InternalServerError({ message: err }, res);
       return;
     }
 
@@ -64,18 +94,18 @@ isModerator = (req, res, next) => {
       },
       (err, roles) => {
         if (err) {
-          res.status(500).send({ message: err });
+          error.InternalServerError({ message: err }, res);
           return;
         }
 
         for (let i = 0; i < roles.length; i++) {
-          if (roles[i].name === "moderator") {
+          if (roles[i].name === "user") {
             next();
             return;
           }
         }
 
-        res.status(403).send({ message: "Require Moderator Role!" });
+        error.Forbidden({ message: "Require User Role!" }, res);
         return;
       }
     );
@@ -84,7 +114,8 @@ isModerator = (req, res, next) => {
 
 const authJwt = {
   verifyToken,
+  isMaster,
   isAdmin,
-  isModerator,
+  isUser,
 };
 module.exports = authJwt;

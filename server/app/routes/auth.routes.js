@@ -1,4 +1,4 @@
-const { verifySignUp } = require("../middlewares");
+const { authJwt, verifySignUp, authLog } = require("../middlewares");
 const express = require("express");
 
 const controller = require("../controllers/auth.controller");
@@ -19,6 +19,12 @@ routes.post(
   controller.signup
 );
 
-routes.post("/signin", controller.signin);
+routes.post("/signin", [authLog.insertLogTokenSignIn], controller.signin);
+
+routes.delete(
+  "/remove/:_id",
+  [authJwt.verifyToken, authJwt.isMaster],
+  controller.remove
+);
 
 module.exports = routes;
